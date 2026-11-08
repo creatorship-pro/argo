@@ -1,0 +1,876 @@
+{
+  "blueprintVersion": "0.2-draft",
+  "status": "designed-not-deployed",
+  "note": "Illustrative example for reviewing the format in B2. The guest is fictional. Capability entries in capabilityCatalog stand in for entries from B1's vetted capability list: the real builder may only use vetted entries, and a design that needs an unvetted capability is flagged as no good fit.",
+  "guest": {
+    "id": "test-guest-001",
+    "fictional": true,
+    "name": "Dana",
+    "business": "Eastgate Heating & Air (fictional)",
+    "size": "14 people",
+    "location": "Toronto, ON"
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "fact": "Spends about ten hours a week chasing quotes and unpaid invoices.",
+      "provenance": "read-back-confirmed",
+      "quote": "It's about ten hours a week, easy, just chasing people."
+    },
+    {
+      "id": "e2",
+      "fact": "Technicians send quotes from the field-service app. Customers often go quiet afterwards.",
+      "provenance": "said",
+      "quote": "The guys send the quote from the app and then nothing. Silence."
+    },
+    {
+      "id": "e3",
+      "fact": "Around thirty quotes are open at any time.",
+      "provenance": "said",
+      "quote": "Thirty-ish open quotes at any given time."
+    },
+    {
+      "id": "e4",
+      "fact": "Does not check email during jobs. Replies late in the evening.",
+      "provenance": "said",
+      "quote": "I'm under a furnace all day. I do email at ten at night."
+    },
+    {
+      "id": "e5",
+      "fact": "Uses Gmail, a field-service app (Jobber) and QuickBooks Online.",
+      "provenance": "said",
+      "quote": "Everything is Jobber, Gmail and QuickBooks."
+    },
+    {
+      "id": "e6",
+      "fact": "Does not want follow-ups to feel like debt collection.",
+      "provenance": "read-back-confirmed",
+      "quote": "I don't want to sound like a collections agency."
+    },
+    {
+      "id": "e7",
+      "fact": "A part-time office manager could approve routine messages.",
+      "provenance": "inferred",
+      "quote": "Priya's in two days a week and handles the books."
+    },
+    {
+      "id": "e8",
+      "fact": "Typical job is worth roughly $2,400.",
+      "provenance": "fde-approved",
+      "quote": null
+    }
+  ],
+  "valueAssessment": {
+    "problem": "Owner chases open quotes and overdue invoices by hand.",
+    "hoursLostPerWeek": 10,
+    "rule": "estimated hours lost multiplied by confidence in the facts behind them",
+    "confidence": "high for the hours (read back and confirmed); medium for how much of that time can be automated",
+    "dollarEstimate": null,
+    "dollarEstimateReason": "The owner's hourly value and the quote conversion rate were not stated, so no dollar or revenue figure is claimed."
+  },
+  "runtimeDefaults": {
+    "harness": "pi",
+    "host": "the employee runtime machine, kept separate from the event app",
+    "runMode": "one headless pi run per routine (pi -p), started by a systemd timer",
+    "isolation": "one unix user per employee",
+    "secrets": "environment file on the host; never stored in this file",
+    "toolAllowlist": "set per routine with --tools"
+  },
+  "designs": [
+    {
+      "id": "d1-drafter",
+      "name": "Follow-up drafter",
+      "autonomyLevel": "low",
+      "scope": "Drafts only. Never sends anything.",
+      "role": {
+        "title": "Follow-up assistant",
+        "objective": "Prepare every quote follow-up and overdue-invoice reminder as a ready draft in Dana's own voice, so she only has to read and send."
+      },
+      "model": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-5-5",
+        "fallback": null,
+        "why": "Writing short, warm, plain messages is the whole job (e1, e6). About sixty drafts a week is light usage. Cost per week still to be measured.",
+        "evidence": [
+          "e1",
+          "e6"
+        ]
+      },
+      "skills": [
+        {
+          "name": "follow-up-writing",
+          "kind": "authored for this guest",
+          "why": "Captures Dana's tone: warm, plain, no pressure (e6).",
+          "evidence": [
+            "e6"
+          ]
+        },
+        {
+          "name": "quote-triage",
+          "kind": "authored for this guest",
+          "why": "Decides which open quotes and invoices need a touch today, using the touch ledger.",
+          "evidence": [
+            "e2",
+            "e3"
+          ]
+        }
+      ],
+      "tools": [
+        {
+          "capability": "email.drafts",
+          "why": "Dana already lives in Gmail (e5)."
+        },
+        {
+          "capability": "crm.read",
+          "why": "Open quotes live there (e2, e5)."
+        },
+        {
+          "capability": "accounting.read",
+          "why": "Overdue invoices live there (e5)."
+        },
+        {
+          "capability": "ledger.touch",
+          "why": "Remembers what was drafted for each quote and invoice, because each run starts fresh."
+        }
+      ],
+      "memory": {
+        "instructions": {
+          "files": [
+            "AGENTS.md: business rules, tone guide, who to escalate to"
+          ],
+          "editedBy": "humans; read-only for the employee"
+        },
+        "state": {
+          "store": "ledger.touch",
+          "records": "touch ledger (SQLite) kept on the employee's machine",
+          "writtenBy": "the ledger script only"
+        },
+        "notes": {
+          "what": "Short per-customer notes holding only facts Dana confirmed.",
+          "editedBy": "humans; the employee may propose additions in the digest but does not write them"
+        }
+      },
+      "routines": [
+        {
+          "name": "morning-drafts",
+          "schedule": {
+            "calendar": "Mon..Fri *-*-* 07:30:00",
+            "timeZone": "America/Toronto"
+          },
+          "prompt": "Find open quotes and overdue invoices that need a touch today. Create one Gmail draft for each, in Dana's voice. Record each in the ledger.",
+          "toolsAllowed": [
+            "crm.read",
+            "accounting.read",
+            "email.drafts",
+            "ledger.touch"
+          ],
+          "session": "none",
+          "approvals": "none needed: it only creates drafts",
+          "onFailure": "email Dana and Priya"
+        },
+        {
+          "name": "evening-digest",
+          "schedule": {
+            "calendar": "Mon..Fri *-*-* 17:30:00",
+            "timeZone": "America/Toronto"
+          },
+          "prompt": "Summarize the drafts waiting for review, oldest first, with one line on why each was chosen.",
+          "toolsAllowed": [
+            "ledger.touch",
+            "email.drafts"
+          ],
+          "session": "none",
+          "approvals": "none needed",
+          "onFailure": "email Dana and Priya"
+        }
+      ],
+      "autonomyAndApprovals": {
+        "alone": [
+          "Read quotes, customers and invoices",
+          "Create drafts",
+          "Record drafts in the ledger"
+        ],
+        "needsApproval": [
+          "Every message: Dana or Priya reads and sends it"
+        ],
+        "never": [
+          "Send anything",
+          "Change any record",
+          "Quote or change a price"
+        ],
+        "enforcedInCode": [
+          "Only drafts can be created: the email.drafts capability has no send access."
+        ]
+      },
+      "expectedOutcome": {
+        "metric": "owner hours per week on follow-ups and reminders",
+        "baselineHours": 10,
+        "estimate": "3 to 6 hours saved",
+        "assumptions": [
+          "About 60 follow-ups and reminders a week (assumed from about 30 open quotes, e3, plus overdue invoices).",
+          "Writing each takes 5 to 8 minutes today; reviewing a ready draft takes 1 to 2 minutes (assumed).",
+          "The rest of the ten hours is phone calls and decisions, which stay with Dana.",
+          "Dana approves in the evening (e4), so some follow-ups go out a day later than they would otherwise."
+        ],
+        "notAGuarantee": true
+      },
+      "accessNeeded": [
+        {
+          "system": "Gmail",
+          "permission": "create drafts",
+          "note": "Credentials held on the host, never in this file."
+        },
+        {
+          "system": "field-service app",
+          "permission": "read-only",
+          "note": null
+        },
+        {
+          "system": "accounting",
+          "permission": "read-only",
+          "note": null
+        }
+      ],
+      "fitCheck": {
+        "status": "feasible",
+        "gaps": []
+      },
+      "risks": [
+        "Follow-ups can still slip if drafts sit unreviewed (e4)."
+      ],
+      "dataRetention": {
+        "default": "Delete message bodies after 90 days; keep the ledger.",
+        "decidedByOwner": false
+      },
+      "pauseSwitch": {
+        "how": "Disable the employee's systemd timers with one command.",
+        "who": "the operator, on the owner's request"
+      },
+      "approvalChannel": {
+        "how": "The evening digest links to each draft in Gmail; Dana or Priya reads and sends it.",
+        "who": [
+          "Dana",
+          "Priya"
+        ],
+        "fallback": "If nobody approves within two days, the digest flags the item as stale."
+      },
+      "costEstimate": {
+        "monthly": null,
+        "basis": "Measure model usage plus a share of hosting over one trial week of routine runs, then project a month.",
+        "status": "to measure"
+      },
+      "acceptanceChecks": [
+        "After a morning run, every follow-up exists as a Gmail draft and nothing has been sent.",
+        "A quote with two ledger touches does not get a new draft without a flag.",
+        "The digest lists waiting drafts oldest first."
+      ]
+    },
+    {
+      "id": "d2-coordinator",
+      "name": "Follow-up coordinator",
+      "autonomyLevel": "medium",
+      "scope": "Sends routine follow-ups and reminders within fixed rules. Drafts everything else.",
+      "role": {
+        "title": "Follow-up coordinator",
+        "objective": "Keep every open quote and overdue invoice moving without Dana: send routine follow-ups on time, in her voice, and bring only the exceptions to her."
+      },
+      "model": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-5-5",
+        "fallback": null,
+        "why": "Same drafting job as d1, plus judgment on whether a case is routine or an exception (e6).",
+        "evidence": [
+          "e1",
+          "e6"
+        ]
+      },
+      "skills": [
+        {
+          "name": "follow-up-writing",
+          "kind": "authored for this guest",
+          "why": "Dana's tone: warm, plain, no pressure (e6).",
+          "evidence": [
+            "e6"
+          ]
+        },
+        {
+          "name": "quote-triage",
+          "kind": "authored for this guest",
+          "why": "Chooses who needs a touch and checks the two-touch limit.",
+          "evidence": [
+            "e2",
+            "e3"
+          ]
+        },
+        {
+          "name": "escalation-rules",
+          "kind": "authored for this guest",
+          "why": "Sends complaints, disputes, discounts and third touches to Dana, not to the customer.",
+          "evidence": [
+            "e6"
+          ]
+        }
+      ],
+      "tools": [
+        {
+          "capability": "email.send",
+          "why": "Needs to see whether a customer has already replied before sending (e5)."
+        },
+        {
+          "capability": "crm.read",
+          "why": "Open quotes live there (e2, e5)."
+        },
+        {
+          "capability": "accounting.read",
+          "why": "Overdue invoices live there (e5)."
+        },
+        {
+          "capability": "ledger.touch",
+          "why": "Enforces the two-touch limit and quiet hours across runs."
+        }
+      ],
+      "memory": {
+        "instructions": {
+          "files": [
+            "AGENTS.md: business rules, tone guide, limits, escalation contacts"
+          ],
+          "editedBy": "humans; read-only for the employee"
+        },
+        "state": {
+          "store": "ledger.touch",
+          "records": "touch ledger (SQLite): touches per quote and invoice, with dates",
+          "writtenBy": "the ledger script only"
+        },
+        "notes": {
+          "what": "Short per-customer notes holding only facts Dana confirmed, including customers who must not be contacted automatically.",
+          "editedBy": "humans; the employee may propose additions in the digest but does not write them"
+        }
+      },
+      "routines": [
+        {
+          "name": "quote-followups",
+          "schedule": {
+            "calendar": "Mon..Fri *-*-* 08:00:00",
+            "timeZone": "America/Toronto"
+          },
+          "prompt": "For open quotes with no reply after 3 days (first touch) or 7 days (second touch), send the follow-up if the case is routine. Draft anything outside the rules for Dana. Record every touch.",
+          "toolsAllowed": [
+            "crm.read",
+            "email.send",
+            "ledger.touch"
+          ],
+          "session": "none",
+          "approvals": "routine cases send; exceptions become drafts",
+          "onFailure": "email Dana and Priya"
+        },
+        {
+          "name": "invoice-reminders",
+          "schedule": {
+            "calendar": "Tue,Thu *-*-* 09:30:00",
+            "timeZone": "America/Toronto"
+          },
+          "prompt": "For invoices 7 days overdue (first reminder) or 14 days overdue (second reminder) and under the owner's limit, send the reminder. Draft everything else. Never send a third touch.",
+          "toolsAllowed": [
+            "accounting.read",
+            "email.send",
+            "ledger.touch"
+          ],
+          "session": "none",
+          "approvals": "routine cases send; exceptions become drafts",
+          "onFailure": "email Dana and Priya"
+        },
+        {
+          "name": "evening-digest",
+          "schedule": {
+            "calendar": "Mon..Fri *-*-* 17:30:00",
+            "timeZone": "America/Toronto"
+          },
+          "prompt": "Summarize what was sent today, what replies came in, and the short list of items that need Dana's decision.",
+          "toolsAllowed": [
+            "ledger.touch",
+            "email.send"
+          ],
+          "session": "none",
+          "approvals": "none needed",
+          "onFailure": "email Dana and Priya"
+        },
+        {
+          "name": "weekly-report",
+          "schedule": {
+            "calendar": "Fri *-*-* 16:00:00",
+            "timeZone": "America/Toronto"
+          },
+          "prompt": "Report touches sent, replies, quotes won or lost where visible, and how many items were escalated, so the rules can be tuned.",
+          "toolsAllowed": [
+            "ledger.touch",
+            "crm.read"
+          ],
+          "session": "none",
+          "approvals": "none needed",
+          "onFailure": "email Dana"
+        }
+      ],
+      "autonomyAndApprovals": {
+        "alone": [
+          "Send quote follow-up 1 (after 3 days) and 2 (after 7 days) in business hours",
+          "Send invoice reminder 1 (7 days overdue) and 2 (14 days overdue) for amounts under the owner's limit",
+          "Record every touch in the ledger"
+        ],
+        "needsApproval": [
+          "Any message that mentions a discount or a payment plan",
+          "Any customer who has replied with a complaint or a dispute",
+          "Any third touch",
+          "Any invoice over the owner's limit (limit to be set by Dana)",
+          "Any customer marked do-not-contact-automatically"
+        ],
+        "never": [
+          "Mention fees or legal action",
+          "Quote or change a price",
+          "Change any record",
+          "Take a payment",
+          "Contact anyone outside business hours"
+        ],
+        "enforcedInCode": [
+          "At most two automatic touches per quote and per invoice.",
+          "Sends only Monday to Friday, 08:00 to 18:00 America/Toronto.",
+          "Never sends to a customer marked do-not-contact-automatically.",
+          "An invoice over the owner's limit becomes a draft, not a send."
+        ]
+      },
+      "expectedOutcome": {
+        "metric": "owner hours per week on follow-ups and reminders",
+        "baselineHours": 10,
+        "estimate": "6 to 8 hours saved",
+        "assumptions": [
+          "About 60 follow-ups and reminders a week (assumed from about 30 open quotes, e3, plus overdue invoices).",
+          "About 70 percent of them are routine and fit the rules (assumed; measure in the first month).",
+          "Each exception takes Dana about 2 minutes.",
+          "The rest of the ten hours is phone calls and decisions, which stay with Dana."
+        ],
+        "notAGuarantee": true
+      },
+      "accessNeeded": [
+        {
+          "system": "Gmail",
+          "permission": "read threads, create drafts, send",
+          "note": "Decision for the owner: send from her own address or a dedicated assistant address."
+        },
+        {
+          "system": "field-service app",
+          "permission": "read-only",
+          "note": null
+        },
+        {
+          "system": "accounting",
+          "permission": "read-only",
+          "note": null
+        }
+      ],
+      "fitCheck": {
+        "status": "feasible",
+        "gaps": []
+      },
+      "risks": [
+        "Messages go out in Dana's name, so the rules and the tone guide need review before the first send.",
+        "The share of routine cases is an assumption."
+      ],
+      "dataRetention": {
+        "default": "Delete message bodies after 90 days; keep the ledger.",
+        "decidedByOwner": false
+      },
+      "pauseSwitch": {
+        "how": "Disable the employee's systemd timers with one command.",
+        "who": "the operator, on the owner's request"
+      },
+      "approvalChannel": {
+        "how": "The evening digest lists each exception with a link to the draft; Dana or Priya approves, edits or discards it.",
+        "who": [
+          "Dana",
+          "Priya"
+        ],
+        "fallback": "Unapproved exceptions are flagged as stale after two days and are never sent automatically."
+      },
+      "costEstimate": {
+        "monthly": null,
+        "basis": "Measure model usage plus a share of hosting over one trial week of routine runs, then project a month.",
+        "status": "to measure"
+      },
+      "acceptanceChecks": [
+        "A quote that already has two touches gets no third message.",
+        "A customer who replied with a complaint gets a draft for Dana and no send.",
+        "A send attempted at 19:00 is refused.",
+        "An invoice over the owner's limit becomes a draft.",
+        "Disabling the timers stops all sends."
+      ]
+    },
+    {
+      "id": "d3-lead",
+      "name": "Back-office follow-up lead",
+      "autonomyLevel": "high",
+      "scope": "Runs the whole follow-up loop: sends, answers simple replies, books callbacks, updates records and chases invoices.",
+      "role": {
+        "title": "Back-office follow-up lead",
+        "objective": "Own quote-to-cash follow-up end to end, and involve Dana only for decisions, disputes and money."
+      },
+      "model": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-5-5",
+        "fallback": null,
+        "why": "Handling replies needs stronger judgment than drafting alone. A smaller model could sort incoming replies first; to test.",
+        "evidence": [
+          "e1",
+          "e6"
+        ]
+      },
+      "skills": [
+        {
+          "name": "follow-up-writing",
+          "kind": "authored for this guest",
+          "why": "Dana's tone (e6).",
+          "evidence": [
+            "e6"
+          ]
+        },
+        {
+          "name": "reply-handling",
+          "kind": "authored for this guest",
+          "why": "Sorts replies into simple questions, callback requests, complaints and disputes.",
+          "evidence": [
+            "e2"
+          ]
+        },
+        {
+          "name": "escalation-rules",
+          "kind": "authored for this guest",
+          "why": "Keeps disputes and money decisions with Dana.",
+          "evidence": [
+            "e6"
+          ]
+        }
+      ],
+      "tools": [
+        {
+          "capability": "email.send",
+          "why": "Handles replies as well as sending."
+        },
+        {
+          "capability": "calendar.book",
+          "why": "Dana is hard to reach by email (e4), so callbacks are booked for her."
+        },
+        {
+          "capability": "crm.write",
+          "why": "Keeps quote status current without Dana."
+        },
+        {
+          "capability": "accounting.paylinks",
+          "why": "Lets a reminder carry a way to pay."
+        },
+        {
+          "capability": "ledger.touch",
+          "why": "Limits and history across runs."
+        }
+      ],
+      "memory": {
+        "instructions": {
+          "files": [
+            "AGENTS.md: business rules, tone guide, limits, escalation contacts, callback hours"
+          ],
+          "editedBy": "humans; read-only for the employee"
+        },
+        "state": {
+          "store": "ledger.touch",
+          "records": "touch ledger (SQLite): touches, replies and outcomes",
+          "writtenBy": "the ledger script only"
+        },
+        "notes": {
+          "what": "Short per-customer notes holding only facts Dana confirmed.",
+          "editedBy": "humans; the employee may propose additions in the digest but does not write them"
+        }
+      },
+      "routines": [
+        {
+          "name": "inbound-replies",
+          "schedule": {
+            "calendar": "Mon..Fri *-*-* 08..17:00/15:00",
+            "timeZone": "America/Toronto"
+          },
+          "prompt": "Check for customer replies. Answer simple questions from the quote, offer callback slots, and escalate complaints and disputes to Dana.",
+          "toolsAllowed": [
+            "email.send",
+            "calendar.book",
+            "ledger.touch"
+          ],
+          "session": "none",
+          "approvals": "simple answers send; everything else is escalated",
+          "onFailure": "email Dana and Priya"
+        },
+        {
+          "name": "quote-followups",
+          "schedule": {
+            "calendar": "Mon..Fri *-*-* 08:00:00",
+            "timeZone": "America/Toronto"
+          },
+          "prompt": "Send quote follow-ups under the same rules as the coordinator design, then update quote status where the customer has answered.",
+          "toolsAllowed": [
+            "crm.write",
+            "email.send",
+            "ledger.touch"
+          ],
+          "session": "none",
+          "approvals": "routine cases send; exceptions become drafts",
+          "onFailure": "email Dana and Priya"
+        },
+        {
+          "name": "invoice-reminders",
+          "schedule": {
+            "calendar": "Tue,Thu *-*-* 09:30:00",
+            "timeZone": "America/Toronto"
+          },
+          "prompt": "Send invoice reminders under the same rules as the coordinator design, with a payment link where available.",
+          "toolsAllowed": [
+            "accounting.paylinks",
+            "email.send",
+            "ledger.touch"
+          ],
+          "session": "none",
+          "approvals": "routine cases send; exceptions become drafts",
+          "onFailure": "email Dana and Priya"
+        },
+        {
+          "name": "weekly-cash-view",
+          "schedule": {
+            "calendar": "Mon *-*-* 07:00:00",
+            "timeZone": "America/Toronto"
+          },
+          "prompt": "Summarize expected and overdue payments for the week, and list quotes likely to close.",
+          "toolsAllowed": [
+            "accounting.paylinks",
+            "crm.write",
+            "ledger.touch"
+          ],
+          "session": "none",
+          "approvals": "none needed",
+          "onFailure": "email Dana"
+        }
+      ],
+      "autonomyAndApprovals": {
+        "alone": [
+          "Everything the coordinator design does",
+          "Answer simple questions that the quote itself answers",
+          "Book callbacks into Dana's open slots",
+          "Update quote status"
+        ],
+        "needsApproval": [
+          "Discounts",
+          "Payment plans",
+          "Complaints and disputes",
+          "Third touches",
+          "Invoices over the owner's limit"
+        ],
+        "never": [
+          "Mention fees or legal action",
+          "Quote or change a price",
+          "Delete records",
+          "Take a payment"
+        ],
+        "enforcedInCode": [
+          "At most two automatic touches per quote and per invoice.",
+          "Sends only Monday to Friday, 08:00 to 18:00 America/Toronto.",
+          "Never sends to a customer marked do-not-contact-automatically.",
+          "An invoice over the owner's limit becomes a draft, not a send."
+        ]
+      },
+      "expectedOutcome": {
+        "metric": "owner hours per week on follow-ups and reminders",
+        "baselineHours": 10,
+        "estimate": "7 to 9 hours saved",
+        "assumptions": [
+          "Everything assumed for the coordinator design.",
+          "Handling replies and bookings accounts for roughly 1 to 2 more hours a week (assumed).",
+          "Both missing connectors can be added to the vetted list; until then this design cannot be built as written."
+        ],
+        "notAGuarantee": true
+      },
+      "accessNeeded": [
+        {
+          "system": "Gmail",
+          "permission": "read, draft, send",
+          "note": null
+        },
+        {
+          "system": "Google Calendar",
+          "permission": "read and create events",
+          "note": null
+        },
+        {
+          "system": "field-service app",
+          "permission": "read and update quote status",
+          "note": "Blocked: no vetted write connector."
+        },
+        {
+          "system": "accounting",
+          "permission": "read and create payment links",
+          "note": "Blocked: no vetted connector."
+        }
+      ],
+      "fitCheck": {
+        "status": "blocked",
+        "gaps": [
+          {
+            "capability": "crm.write",
+            "need": "write access to the field-service app to update quote status",
+            "vetted": false
+          },
+          {
+            "capability": "accounting.paylinks",
+            "need": "payment link creation in the accounting system",
+            "vetted": false
+          }
+        ],
+        "fallback": "Drop the record updates and payment links: post status changes as a daily list for the office manager, and include the customer's existing invoice link in reminders. That reduces this design to the coordinator plus reply handling.",
+        "gapsLoggedForB1": true
+      },
+      "risks": [
+        "Customer-facing replies go out in Dana's name.",
+        "Higher autonomy than the evidence supports for a first deployment."
+      ],
+      "dataRetention": {
+        "default": "Delete message bodies after 90 days; keep the ledger.",
+        "decidedByOwner": false
+      },
+      "pauseSwitch": {
+        "how": "Disable the employee's systemd timers with one command.",
+        "who": "the operator, on the owner's request"
+      },
+      "approvalChannel": {
+        "how": "The evening digest lists each exception with a link to the draft; Dana or Priya approves, edits or discards it.",
+        "who": [
+          "Dana",
+          "Priya"
+        ],
+        "fallback": "Unapproved exceptions are flagged as stale after two days and are never sent automatically."
+      },
+      "costEstimate": {
+        "monthly": null,
+        "basis": "Measure model usage plus a share of hosting over one trial week of routine runs, then project a month.",
+        "status": "to measure"
+      },
+      "acceptanceChecks": [
+        "A quote that already has two touches gets no third message.",
+        "A customer who replied with a complaint gets a draft for Dana and no send.",
+        "A send attempted at 19:00 is refused.",
+        "An invoice over the owner's limit becomes a draft.",
+        "Disabling the timers stops all sends.",
+        "A callback request books a slot only in Dana's open time.",
+        "A reply that names a dispute is escalated and not answered."
+      ]
+    }
+  ],
+  "recommendation": {
+    "designId": "d2-coordinator",
+    "madeBy": "system, after reading all three designs",
+    "reasons": [
+      "It targets the confirmed problem of about ten hours a week chasing quotes and invoices (e1).",
+      "Dana only reads email late in the evening (e4). In d1 every message waits for her approval, so follow-ups slip a day. In d2 routine follow-ups go out on time.",
+      "The two-touch cap, business hours and escalation rules answer 'I don't want to sound like a collections agency' (e6).",
+      "d3 is blocked by two missing connectors and puts reply handling in Dana's name, which is more risk than the evidence supports for a first design."
+    ],
+    "caveats": [
+      "Needs Dana's invoice limit and a choice of sending address.",
+      "The 70 percent routine share is an assumption to measure in the first month."
+    ]
+  },
+  "fdeChoice": null,
+  "fdeChoiceReason": null,
+  "scheduleFormat": "Schedules are systemd OnCalendar expressions, with the time zone kept in timeZone. Check each with systemd-analyze calendar on the server (not yet run).",
+  "capabilityCatalog": [
+    {
+      "id": "email.drafts",
+      "vendor": "Gmail",
+      "kind": "mcp",
+      "access": "create drafts only",
+      "vetted": true,
+      "pinnedVersion": null,
+      "reviewedBy": null,
+      "reviewedOn": null,
+      "status": "illustrative"
+    },
+    {
+      "id": "email.send",
+      "vendor": "Gmail",
+      "kind": "mcp",
+      "access": "read threads, create drafts, send",
+      "vetted": true,
+      "pinnedVersion": null,
+      "reviewedBy": null,
+      "reviewedOn": null,
+      "status": "illustrative"
+    },
+    {
+      "id": "calendar.book",
+      "vendor": "Google Calendar",
+      "kind": "mcp",
+      "access": "read and create events",
+      "vetted": true,
+      "pinnedVersion": null,
+      "reviewedBy": null,
+      "reviewedOn": null,
+      "status": "illustrative"
+    },
+    {
+      "id": "crm.read",
+      "vendor": "Jobber",
+      "kind": "mcp",
+      "access": "read quotes and customers",
+      "vetted": true,
+      "pinnedVersion": null,
+      "reviewedBy": null,
+      "reviewedOn": null,
+      "status": "illustrative"
+    },
+    {
+      "id": "crm.write",
+      "vendor": "Jobber",
+      "kind": "mcp",
+      "access": "read and update quote status",
+      "vetted": false,
+      "pinnedVersion": null,
+      "reviewedBy": null,
+      "reviewedOn": null,
+      "status": "illustrative"
+    },
+    {
+      "id": "accounting.read",
+      "vendor": "QuickBooks Online",
+      "kind": "mcp",
+      "access": "read invoices and aging",
+      "vetted": true,
+      "pinnedVersion": null,
+      "reviewedBy": null,
+      "reviewedOn": null,
+      "status": "illustrative"
+    },
+    {
+      "id": "accounting.paylinks",
+      "vendor": "QuickBooks Online",
+      "kind": "mcp",
+      "access": "read invoices and create payment links",
+      "vetted": false,
+      "pinnedVersion": null,
+      "reviewedBy": null,
+      "reviewedOn": null,
+      "status": "illustrative"
+    },
+    {
+      "id": "ledger.touch",
+      "vendor": "local SQLite file",
+      "kind": "script",
+      "access": "read and write; refuses sends that break the rules",
+      "vetted": true,
+      "pinnedVersion": null,
+      "reviewedBy": null,
+      "reviewedOn": null,
+      "status": "illustrative"
+    }
+  ]
+}
