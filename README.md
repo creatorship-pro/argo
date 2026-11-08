@@ -22,7 +22,35 @@ Next.js 16, React 19, Tailwind 4 and TypeScript; Convex (hosted) for data and re
 
 ## Status
 
-The app does not exist yet. Ticket S0 (CRE-54) creates the scaffold, and every other build ticket starts from it.
+The Next.js scaffold is in place (ticket S0, CRE-54). Convex and Better Auth are not connected yet: that step needs a Convex project (see below).
+
+## Run it locally
+
+Needs Node 22 and npm.
+
+```bash
+npm install
+cp .env.example .env.local
+npm run dev
+```
+
+Open http://localhost:3000. `http://localhost:3000/api/health` returns `{"ok":true,"service":"argo"}`.
+
+| Command | What it does |
+|---|---|
+| `npm run lint` | ESLint |
+| `npm run typecheck` | TypeScript, no emit |
+| `npm test` | Vitest, run once |
+| `npm run build` | Production build |
+| `npm run format` | Prettier, writes changes |
+
+### Connecting Convex (not done yet)
+
+Create a Convex project, then run `npx convex dev` in this folder and sign in. It writes `CONVEX_DEPLOYMENT` and `NEXT_PUBLIC_CONVEX_URL` into `.env.local` and creates the `convex/` folder. The Better Auth component is wired after that, because it needs a live deployment to generate its types.
+
+### Layout
+
+`src/app` (routes), `src/components`, `src/lib`, `convex/` (after the step above), `docs/` (examples and specs), `scripts/`.
 
 ## Examples
 
