@@ -27,6 +27,14 @@ async function sendSignInCode(email: string, otp: string) {
 export const createAuth = (ctx: GenericCtx<DataModel>) =>
   betterAuth({
     baseURL: process.env.SITE_URL,
+    // Staff open the app by hostname and by IP, so every address the event uses
+    // has to be trusted or sign-in fails with an invalid-origin error (and the
+    // page just looks hung). Set TRUSTED_ORIGINS as comma separated origins,
+    // for example http://100.64.0.2:3100,http://ipad-host:3100 .
+    trustedOrigins: (process.env.TRUSTED_ORIGINS ?? "")
+      .split(",")
+      .map((o) => o.trim())
+      .filter(Boolean),
     database: authComponent.adapter(ctx),
     // Long sessions, so an FDE stays signed in on the iPad all evening.
     session: { expiresIn: 60 * 60 * 24 * 14, updateAge: 60 * 60 * 24 },
