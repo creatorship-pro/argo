@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // A self-contained server build, so the container stays small (ticket S7).
+  output: "standalone",
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {

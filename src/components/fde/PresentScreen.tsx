@@ -8,7 +8,7 @@ import { QrCode } from "@/components/qr/QrCode";
 import { ProposalPage } from "@/components/proposal/ProposalPage";
 import { talkingPoints } from "@/lib/proposal/view";
 import { evidenceFor } from "@/lib/blueprint/review";
-import { ProvenanceTag } from "./SessionScreen";
+import { ProvenanceTag } from "./ProvenanceTag";
 
 /**
  * Full-screen proposal for the FDE to walk the owner through, with the QR code

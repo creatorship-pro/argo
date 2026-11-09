@@ -46,7 +46,7 @@ export function BuyButton({
     return (
       <button
         disabled
-        className="rounded-xl bg-zinc-300 px-8 py-4 text-xl font-semibold text-zinc-600"
+        className="shrink-0 whitespace-nowrap rounded-xl bg-zinc-300 px-6 py-4 text-xl font-semibold text-zinc-600"
       >
         Not open yet
       </button>
@@ -56,7 +56,7 @@ export function BuyButton({
     return (
       <button
         disabled
-        className="rounded-xl bg-zinc-300 px-8 py-4 text-xl font-semibold text-zinc-600"
+        className="shrink-0 whitespace-nowrap rounded-xl bg-zinc-300 px-6 py-4 text-xl font-semibold text-zinc-600"
       >
         Payments not set up
       </button>
@@ -66,7 +66,7 @@ export function BuyButton({
     <>
       <button
         onClick={() => setOpen(true)}
-        className="rounded-xl bg-blue-600 px-8 py-4 text-xl font-semibold text-white active:bg-blue-700"
+        className="shrink-0 whitespace-nowrap rounded-xl bg-blue-600 px-8 py-4 text-xl font-semibold text-white active:bg-blue-700"
       >
         Buy
       </button>

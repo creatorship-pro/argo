@@ -52,7 +52,7 @@ export function buildSteps(d: Design): string[] {
   const steps: string[] = [];
   for (const r of d.routines) {
     steps.push(
-      `${describeCalendar(r.schedule.calendar)}: ${r.name}. ${firstSentence(r.prompt)}`,
+      `${cap(describeCalendar(r.schedule.calendar))}: ${r.name}. ${firstSentence(r.prompt)}`,
     );
   }
   if (d.autonomyAndApprovals.needsApproval.length) {
@@ -65,6 +65,8 @@ export function buildSteps(d: Design): string[] {
   );
   return steps;
 }
+
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 function firstSentence(s: string): string {
   const m = s.trim().match(/^[^.!?]+[.!?]?/);

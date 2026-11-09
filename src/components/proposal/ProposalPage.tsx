@@ -220,7 +220,7 @@ export function ProposalPage({
       <div className="fixed inset-x-0 bottom-0 border-t border-zinc-200 bg-white/95 px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 backdrop-blur">
         <div className="mx-auto flex max-w-2xl items-center justify-between gap-4">
           <div>
-            <p className="text-2xl font-bold">
+            <p className="text-xl font-bold sm:text-2xl">
               {price.oneTime > 0
                 ? formatMoney(price.oneTime, offer.currency)
                 : "Price to be set"}
