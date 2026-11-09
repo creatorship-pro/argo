@@ -1,0 +1,18 @@
+{
+  "id": "accounting.read",
+  "vendor": "QuickBooks Online, through intuit/quickbooks-online-mcp-server",
+  "kind": "mcp",
+  "access": "read invoices and aging",
+  "connectsTo": "The owner's QuickBooks Online company (OAuth, using an Intuit developer app).",
+  "permissions": [
+    "QuickBooks Online accounting scope. TO VERIFY: Intuit's accounting scope is believed to be read and write with no read-only variant, so read-only depends on the server flags below."
+  ],
+  "risk": "medium",
+  "riskNote": "Official Intuit repository (Apache-2.0 in its LICENSE file, although its README says MIT: the reviewer should note the mismatch). It has no tagged releases and is not on npm, so it is pinned to a commit. It also exposes create, update and delete tools by default. Run it with QUICKBOOKS_DISABLE_WRITE, QUICKBOOKS_DISABLE_UPDATE and QUICKBOOKS_DISABLE_DELETE all set to true so only get_* and search_* tools are registered (invoices, customers, aged receivables). Tokens are written to a .env file on the host and the refresh token rotates and lapses after 100 days of disuse. The README mentions no telemetry. Handles invoice amounts and customer balances.",
+  "license": "Apache-2.0",
+  "vetted": false,
+  "pinnedVersion": "31a1dd5c3e170e368dbff651abbaf61aabde6ed9",
+  "reviewedBy": null,
+  "reviewedOn": null,
+  "status": "draft"
+}

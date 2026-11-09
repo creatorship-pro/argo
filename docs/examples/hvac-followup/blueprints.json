@@ -1,7 +1,7 @@
 {
   "blueprintVersion": "0.2-draft",
   "status": "designed-not-deployed",
-  "note": "Illustrative example for reviewing the format in B2. The guest is fictional. Capability entries in capabilityCatalog stand in for entries from B1's vetted capability list: the real builder may only use vetted entries, and a design that needs an unvetted capability is flagged as no good fit.",
+  "note": "Illustrative example for reviewing the format in B2. The guest is fictional. The capabilityCatalog below is a summary: the first six ids (email.drafts, email.send, calendar.book, crm.read, accounting.read, ledger.touch) now have real draft entries in docs/capabilities/ that await human review, while crm.write and accounting.paylinks stay unvetted on purpose, so the blocked design stays blocked. The real builder may only use vetted entries, and a design that needs an unvetted capability is flagged as no good fit.",
   "guest": {
     "id": "test-guest-001",
     "fictional": true,

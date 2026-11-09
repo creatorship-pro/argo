@@ -1,0 +1,18 @@
+{
+  "id": "crm.read",
+  "vendor": "Jobber, through Onsite-Intelligence/Jobber-mcp (npm jobber-mcp-server)",
+  "kind": "mcp",
+  "access": "read quotes and customers",
+  "connectsTo": "The owner's Jobber account, through Jobber's GraphQL API (OAuth, using a developer app registered in Jobber's Developer Center).",
+  "permissions": [
+    "Jobber app scopes for reading clients and quotes only. Jobber sets scopes on the developer app, not in the sign-in link. Exact scope names TO CONFIRM in the Developer Center: public docs did not list them."
+  ],
+  "risk": "medium",
+  "riskNote": "This is a weak candidate and the reviewer should decide whether to use it. It is an unofficial, third-party server with about 3 stars and no tagged releases (npm 1.0.1, March 2026). It includes write tools (create client, update client, create quote, create job) and has no read-only mode, so read-only has to come from the Jobber app's scopes (TO CONFIRM they can be limited to read) or from hiding the write tools. A different third-party Jobber server (friendlygeorge/jobber-mcp-server) is archived and was rejected. Option to consider instead: a small read-only script against Jobber's GraphQL API, which avoids third-party code that sees customer data. Handles customer names, emails and quote amounts.",
+  "license": "MIT",
+  "vetted": false,
+  "pinnedVersion": "1.0.1",
+  "reviewedBy": null,
+  "reviewedOn": null,
+  "status": "draft"
+}
