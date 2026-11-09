@@ -33,23 +33,23 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  "auth": typeof auth;
-  "capture": typeof capture;
-  "consent": typeof consent;
-  "designs": typeof designs;
-  "designsNode": typeof designsNode;
-  "events": typeof events;
-  "groups": typeof groups;
-  "guests": typeof guests;
-  "http": typeof http;
+  auth: typeof auth;
+  capture: typeof capture;
+  consent: typeof consent;
+  designs: typeof designs;
+  designsNode: typeof designsNode;
+  events: typeof events;
+  groups: typeof groups;
+  guests: typeof guests;
+  http: typeof http;
   "lib/staff": typeof lib_staff;
   "lib/validators": typeof lib_validators;
-  "listener": typeof listener;
-  "profile": typeof profile;
-  "proposals": typeof proposals;
-  "purchases": typeof purchases;
-  "seed": typeof seed;
-  "staff": typeof staff;
+  listener: typeof listener;
+  profile: typeof profile;
+  proposals: typeof proposals;
+  purchases: typeof purchases;
+  seed: typeof seed;
+  staff: typeof staff;
 }>;
 
 /**
