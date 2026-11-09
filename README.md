@@ -22,7 +22,20 @@ Next.js 16, React 19, Tailwind 4 and TypeScript; Convex (hosted) for data and re
 
 ## Status
 
-The scaffold is in place (ticket S0, CRE-54): Next.js, Convex with a placeholder schema, and a Better Auth email-code sign-in skeleton at `/sign-in`. Real staff login, roles and QR guest access arrive with E3.
+Event one is built end to end and has been tested against stand-ins, not against live services. What exists:
+
+| Ticket | What                                                                                                  | Where                                                           |
+| ------ | ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| A1     | FDE iPad screens: guest list, session (consent, record, read-back lock), break review, present and QR | `src/app/(fde)`, `src/components/fde`                           |
+| A3     | Turn-based listener: segments, transcription proxy, suggested questions, tagged profile updates       | `src/lib/listener`, `src/lib/capture`, `convex/listener.ts`     |
+| A4     | Blueprint builder: three independent designs, fit check, separate recommendation, FDE choice stored   | `src/lib/blueprint`, `convex/designs*.ts`                       |
+| A7     | Run board: server-time countdown, one status chip per FDE group, manual phase changes                 | `src/app/(facilitator)`, `src/components/facilitator`           |
+| E1     | Proposal page and free takeaway (JSON and README)                                                     | `src/app/p/[token]`, `src/lib/proposal`                         |
+| E2     | Stripe embedded Checkout and verified webhook (test mode only)                                        | `src/app/api/checkout`, `convex/purchases.ts`, `convex/http.ts` |
+| E3     | Staff email-code login from an allowlist, roles, QR guest links                                       | `convex/auth.ts`, `src/lib/access`                              |
+| S7     | Docker image, deploy and rollback scripts                                                             | `Dockerfile`, `scripts/`, `docs/deploy.md`                      |
+
+Not done, and waiting on a person: real prices and terms (E5, needs D4 and E4), a reviewer's sign-off on the six capability entries (B1), the Parakeet server, and server access with a domain (S7). Without a model key the app runs on labeled stand-ins.
 
 ## Run it locally
 
@@ -62,7 +75,20 @@ npx convex env set BETTER_AUTH_SECRET "$(openssl rand -base64 32)"
 npx convex env set SITE_URL http://localhost:3000
 ```
 
-Until an email sender exists, sign-in codes are not emailed. In development the code is printed in the `npx convex dev` log.
+Staff sign in from an allowlist. Set it on the Convex deployment, then start a rehearsal event with test guests:
+
+```bash
+npx convex env set STAFF_ALLOWLIST "you@example.com:admin,fde@example.com:fde,sam@example.com:facilitator"
+npx convex run seed:rehearsal '{"fdeEmails":["fde@example.com"]}'
+```
+
+Until an email sender exists (`EMAIL_API_KEY`, `EMAIL_FROM`), sign-in codes are not emailed. In development the code is printed in the `npx convex dev` log. Without `ANTHROPIC_API_KEY` the suggestions are a plain checklist and the three designs are a labeled stand-in, so the whole flow can be tried before a key exists.
+
+Then: sign in as the FDE at `/fde`, open a guest, tap "Guest agreed", record (the transcription stub returns fake text), lock a read-back, build the designs at the break review, choose one, and open the proposal and QR code. Open `/facilitator` as the facilitator to run the clock.
+
+### Deploying
+
+See [docs/deploy.md](docs/deploy.md). The transcription server contract is in [docs/parakeet-contract.md](docs/parakeet-contract.md).
 
 ### Layout
 

@@ -1,0 +1,9 @@
+# HTTPS in front of Argo (ticket S7). iPad Safari only allows the microphone on
+# secure pages, so the app must be served over HTTPS. Caddy gets and renews the
+# certificate by itself. Point your DNS record at this server first.
+#
+# If this server already sits behind a Cloudflare Tunnel instead, skip Caddy and
+# point the tunnel's public hostname at http://127.0.0.1:3100.
+argo.example.com {
+	reverse_proxy 127.0.0.1:3100
+}

@@ -37,3 +37,32 @@ export function checkVettedCapability(input: unknown): CheckResult<Capability> {
   if (validateVetted(input)) return { ok: true, value: input as Capability };
   return { ok: false, errors: describe(validateVetted) };
 }
+
+const validateDesign = load(`${schema.$id}#/$defs/design`);
+const validateRecommendation = load(`${schema.$id}#/$defs/recommendation`);
+const validateValue = load(`${schema.$id}#/$defs/valueAssessment`);
+
+/** Schema check for one design (also the shape of the guest's takeaway file). */
+export function checkDesign(
+  input: unknown,
+): CheckResult<BlueprintSet["designs"][number]> {
+  if (validateDesign(input))
+    return { ok: true, value: input as BlueprintSet["designs"][number] };
+  return { ok: false, errors: describe(validateDesign) };
+}
+
+export function checkRecommendation(
+  input: unknown,
+): CheckResult<BlueprintSet["recommendation"]> {
+  if (validateRecommendation(input))
+    return { ok: true, value: input as BlueprintSet["recommendation"] };
+  return { ok: false, errors: describe(validateRecommendation) };
+}
+
+export function checkValueAssessment(
+  input: unknown,
+): CheckResult<BlueprintSet["valueAssessment"]> {
+  if (validateValue(input))
+    return { ok: true, value: input as BlueprintSet["valueAssessment"] };
+  return { ok: false, errors: describe(validateValue) };
+}

@@ -1,0 +1,24 @@
+{
+  "placeholder": true,
+  "note": "PLACEHOLDER prices and terms. Real ones come from D4 (pricing) and E4 (service scope) and are loaded by E5. Do not invent them.",
+  "currency": "cad",
+  "implementation": {
+    "name": "Build and set up your AI employee",
+    "amountCents": 0,
+    "description": "One-time. We build, connect and test the design you chose."
+  },
+  "monitoring": {
+    "name": "Monitoring and maintenance",
+    "amountCents": 0,
+    "interval": "month",
+    "description": "Optional. We watch it, fix it and tune it."
+  },
+  "deliveryDays": 21,
+  "terms": {
+    "paymentTiming": "PLACEHOLDER: payment timing is set in E4/D4.",
+    "deliveryTimeline": "PLACEHOLDER: delivery timeline is set in E4.",
+    "supportCoverage": "PLACEHOLDER: support coverage is set in E4.",
+    "cancellation": "PLACEHOLDER: cancellation terms are set in E4."
+  },
+  "conciergeBonus": null
+}
