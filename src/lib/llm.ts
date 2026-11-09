@@ -1,11 +1,20 @@
 /**
- * A very small client for the Anthropic Messages API, using fetch so there is
- * no extra dependency. Prompts and replies hold guest speech: nothing here
- * logs them.
+ * A very small client for the OpenCode Go gateway, using fetch so there is no
+ * extra dependency. It speaks the OpenAI-compatible chat completions shape.
+ *
+ * Prompts and replies hold guest speech: nothing here logs them.
+ *
+ * The gateway is not the model. `ARGO_MODEL` picks the model behind it; models
+ * are listed at https://opencode.ai/zen/go/v1/models . Every request needs an
+ * `x-opencode-session` header, which is how the gateway routes a conversation.
  */
 export interface LlmConfig {
   apiKey: string;
   model: string;
+  /** Defaults to https://opencode.ai/zen/go/v1 */
+  baseUrl?: string;
+  /** Defaults to a fresh UUID per request. Reuse one to keep routing stable. */
+  sessionId?: string;
   fetchImpl?: typeof fetch;
 }
 
@@ -15,14 +24,21 @@ export interface LlmRequest {
   maxTokens?: number;
 }
 
-export const DEFAULT_MODEL = "claude-sonnet-5";
+export const DEFAULT_BASE_URL = "https://opencode.ai/zen/go/v1";
+
+/** The model behind the gateway, not the gateway itself. */
+export const DEFAULT_MODEL = "glm-5.3";
 
 export function llmConfigFromEnv(
   env: Record<string, string | undefined>,
 ): LlmConfig | null {
-  const apiKey = env.ANTHROPIC_API_KEY?.trim();
+  const apiKey = (env.OPENCODE_GO_API_KEY ?? env.ARGO_LLM_API_KEY)?.trim();
   if (!apiKey) return null;
-  return { apiKey, model: env.ARGO_MODEL?.trim() || DEFAULT_MODEL };
+  return {
+    apiKey,
+    model: env.ARGO_MODEL?.trim() || DEFAULT_MODEL,
+    baseUrl: env.ARGO_LLM_BASE_URL?.trim() || DEFAULT_BASE_URL,
+  };
 }
 
 export class LlmError extends Error {
@@ -32,34 +48,52 @@ export class LlmError extends Error {
   }
 }
 
+/** Reads the reply whether the gateway returns a string or content parts. */
+function textOf(content: unknown): string {
+  if (typeof content === "string") return content;
+  if (!Array.isArray(content)) return "";
+  return content
+    .map((part) => {
+      if (typeof part === "string") return part;
+      if (part && typeof part === "object") {
+        const { type, text } = part as { type?: unknown; text?: unknown };
+        // Reasoning and tool parts are not the reply.
+        if (type !== undefined && type !== "text") return "";
+        return typeof text === "string" ? text : "";
+      }
+      return "";
+    })
+    .join("");
+}
+
 export async function complete(
   req: LlmRequest,
   cfg: LlmConfig,
 ): Promise<string> {
   const f = cfg.fetchImpl ?? fetch;
-  const res = await f("https://api.anthropic.com/v1/messages", {
+  const baseUrl = (cfg.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
+  const res = await f(`${baseUrl}/chat/completions`, {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-api-key": cfg.apiKey,
-      "anthropic-version": "2023-06-01",
+      authorization: `Bearer ${cfg.apiKey}`,
+      "x-opencode-session": cfg.sessionId ?? crypto.randomUUID(),
     },
     body: JSON.stringify({
       model: cfg.model,
       max_tokens: req.maxTokens ?? 4096,
-      system: req.system,
-      messages: [{ role: "user", content: req.user }],
+      messages: [
+        { role: "system", content: req.system },
+        { role: "user", content: req.user },
+      ],
     }),
   });
   // Deliberately do not include the response body: it can echo the prompt.
   if (!res.ok) throw new LlmError(res.status);
   const body = (await res.json()) as {
-    content?: { type: string; text?: string }[];
+    choices?: { message?: { content?: unknown } }[];
   };
-  return (body.content ?? [])
-    .filter((b) => b.type === "text")
-    .map((b) => b.text ?? "")
-    .join("");
+  return textOf(body.choices?.[0]?.message?.content);
 }
 
 /** Pulls the first JSON value out of a reply, tolerating code fences and chatter. */

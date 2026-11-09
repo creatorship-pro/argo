@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { extractJson, complete, llmConfigFromEnv, LlmError } from "../llm";
+import {
+  DEFAULT_BASE_URL,
+  DEFAULT_MODEL,
+  extractJson,
+  complete,
+  llmConfigFromEnv,
+  LlmError,
+} from "../llm";
 import {
   buildListenerPrompt,
   parseAnalysis,
@@ -91,9 +98,40 @@ describe("listener reply handling", () => {
 describe("model client", () => {
   it("is off without a key", () => {
     expect(llmConfigFromEnv({})).toBeNull();
+    // An Anthropic key no longer turns the model on: the gateway is the seam now.
+    expect(llmConfigFromEnv({ ANTHROPIC_API_KEY: "k" })).toBeNull();
     expect(
-      llmConfigFromEnv({ ANTHROPIC_API_KEY: "k", ARGO_MODEL: "m" }),
+      llmConfigFromEnv({ OPENCODE_GO_API_KEY: "k", ARGO_MODEL: "m" }),
     ).toMatchObject({ apiKey: "k", model: "m" });
+    expect(llmConfigFromEnv({ ARGO_LLM_API_KEY: "k" })).toMatchObject({
+      apiKey: "k",
+      model: DEFAULT_MODEL,
+      baseUrl: DEFAULT_BASE_URL,
+    });
+  });
+  it("posts to the gateway with a bearer token and a session header", async () => {
+    let seen: { url: string; init: RequestInit } | undefined;
+    const fetchImpl = (async (url: string, init: RequestInit) => {
+      seen = { url, init };
+      return Response.json({ choices: [{ message: { content: "ok" } }] });
+    }) as unknown as typeof fetch;
+    expect(
+      await complete(
+        { system: "s", user: "u", maxTokens: 12 },
+        { apiKey: "k", model: "m", baseUrl: "https://gw.test/v1/", fetchImpl },
+      ),
+    ).toBe("ok");
+    expect(seen?.url).toBe("https://gw.test/v1/chat/completions");
+    const headers = seen?.init.headers as Record<string, string>;
+    expect(headers.authorization).toBe("Bearer k");
+    expect(headers["x-opencode-session"]).toMatch(/[0-9a-f-]{20,}/);
+    const body = JSON.parse(String(seen?.init.body));
+    expect(body.model).toBe("m");
+    expect(body.max_tokens).toBe(12);
+    expect(body.messages).toEqual([
+      { role: "system", content: "s" },
+      { role: "user", content: "u" },
+    ]);
   });
   it("extracts JSON from fenced or chatty replies", () => {
     expect(extractJson('Sure!\n```json\n{"a":1}\n```')).toEqual({ a: 1 });
@@ -116,19 +154,25 @@ describe("model client", () => {
       ),
     ).rejects.not.toThrow(/SECRET/);
   });
-  it("joins text blocks", async () => {
-    const fetchImpl = (async () =>
+  it("reads both string and part-shaped replies", async () => {
+    const parts = (async () =>
       Response.json({
-        content: [
-          { type: "text", text: "a" },
-          { type: "tool", text: "x" },
-          { type: "text", text: "b" },
+        choices: [
+          {
+            message: {
+              content: [
+                { type: "text", text: "a" },
+                { type: "reasoning", text: "x" },
+                { type: "text", text: "b" },
+              ],
+            },
+          },
         ],
-      })) as typeof fetch;
+      })) as unknown as typeof fetch;
     expect(
       await complete(
         { system: "s", user: "u" },
-        { apiKey: "k", model: "m", fetchImpl },
+        { apiKey: "k", model: "m", fetchImpl: parts },
       ),
     ).toBe("ab");
   });
