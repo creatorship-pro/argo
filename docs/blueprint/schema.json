@@ -1,0 +1,915 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://argo.invalid/blueprint.schema.json",
+  "title": "Argo AI employee blueprint set",
+  "description": "A set of AI employee designs for one guest, with the evidence behind them and a recommendation. Format version 0.2-draft. Every employee is DESIGNED, not deployed. The file never contains credentials. `$defs/design` is also the shape of the single design exported as the guest's takeaway. `$defs/capability` and `$defs/vettedCapability` are the shapes B1 uses for the vetted capability list.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "blueprintVersion",
+    "status",
+    "guest",
+    "evidence",
+    "valueAssessment",
+    "runtimeDefaults",
+    "designs",
+    "recommendation",
+    "fdeChoice",
+    "fdeChoiceReason",
+    "capabilityCatalog"
+  ],
+  "properties": {
+    "blueprintVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "description": "Always designed-not-deployed. Nothing in a blueprint is switched on.",
+      "const": "designed-not-deployed"
+    },
+    "note": {
+      "type": "string"
+    },
+    "guest": {
+      "$ref": "#/$defs/guest"
+    },
+    "evidence": {
+      "description": "The guest-profile facts the designs cite. Each carries who said it.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/evidenceItem"
+      }
+    },
+    "valueAssessment": {
+      "$ref": "#/$defs/valueAssessment"
+    },
+    "runtimeDefaults": {
+      "$ref": "#/$defs/runtimeDefaults"
+    },
+    "designs": {
+      "description": "The builder (A4) writes three; the format only requires at least one so a single chosen design can also be exported.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/design"
+      }
+    },
+    "recommendation": {
+      "$ref": "#/$defs/recommendation"
+    },
+    "fdeChoice": {
+      "description": "The design id the FDE chose, or null until they choose.",
+      "type": ["string", "null"]
+    },
+    "fdeChoiceReason": {
+      "type": ["string", "null"]
+    },
+    "scheduleFormat": {
+      "type": "string"
+    },
+    "capabilityCatalog": {
+      "description": "The capability entries the designs use, by id. In production these come from B1's vetted list.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/capability"
+      }
+    }
+  },
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "stringList": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/nonEmptyString"
+      }
+    },
+    "capabilityId": {
+      "description": "A stable id such as email.drafts or crm.read: lowercase dotted segments. Blueprints refer to capabilities by id, never by vendor name.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(\\.[a-z][a-z0-9]*)+$"
+    },
+    "evidenceRefs": {
+      "description": "Ids of evidence items that justify a choice.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/nonEmptyString"
+      }
+    },
+    "provenance": {
+      "description": "Who said it. Only read-back-confirmed counts as a guest-confirmed fact.",
+      "enum": ["said", "read-back-confirmed", "inferred", "fde-approved"]
+    },
+    "guest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "business"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "fictional": {
+          "type": "boolean"
+        },
+        "name": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "business": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "size": {
+          "type": "string"
+        },
+        "location": {
+          "type": "string"
+        }
+      }
+    },
+    "evidenceItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "fact", "provenance", "quote"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "fact": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "provenance": {
+          "$ref": "#/$defs/provenance"
+        },
+        "quote": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "valueAssessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "problem",
+        "hoursLostPerWeek",
+        "confidence",
+        "dollarEstimate",
+        "dollarEstimateReason"
+      ],
+      "properties": {
+        "problem": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "hoursLostPerWeek": {
+          "type": "number",
+          "minimum": 0
+        },
+        "rule": {
+          "type": "string"
+        },
+        "confidence": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "dollarEstimate": {
+          "type": ["number", "null"],
+          "minimum": 0
+        },
+        "dollarEstimateReason": {
+          "type": ["string", "null"]
+        }
+      },
+      "if": {
+        "properties": {
+          "dollarEstimate": {
+            "type": "null"
+          }
+        },
+        "required": ["dollarEstimate"],
+        "type": "object"
+      },
+      "then": {
+        "properties": {
+          "dollarEstimateReason": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "type": "object"
+      }
+    },
+    "runtimeDefaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "harness",
+        "host",
+        "runMode",
+        "isolation",
+        "secrets",
+        "toolAllowlist"
+      ],
+      "properties": {
+        "harness": {
+          "enum": ["pi"]
+        },
+        "host": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "runMode": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "isolation": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "secrets": {
+          "description": "Where credentials live. Never in the blueprint.",
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "toolAllowlist": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      }
+    },
+    "design": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "autonomyLevel",
+        "scope",
+        "role",
+        "model",
+        "skills",
+        "tools",
+        "memory",
+        "routines",
+        "autonomyAndApprovals",
+        "expectedOutcome",
+        "accessNeeded",
+        "fitCheck",
+        "risks",
+        "dataRetention",
+        "pauseSwitch",
+        "approvalChannel",
+        "costEstimate",
+        "acceptanceChecks"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "name": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "autonomyLevel": {
+          "description": "How much it does without a human, so the three designs can be compared.",
+          "enum": ["low", "medium", "high"]
+        },
+        "scope": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "role": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["title", "objective"],
+          "properties": {
+            "title": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "objective": {
+              "$ref": "#/$defs/nonEmptyString"
+            }
+          }
+        },
+        "model": {
+          "$ref": "#/$defs/model"
+        },
+        "skills": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/skill"
+          }
+        },
+        "tools": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/tool"
+          }
+        },
+        "memory": {
+          "$ref": "#/$defs/memory"
+        },
+        "routines": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/routine"
+          }
+        },
+        "autonomyAndApprovals": {
+          "$ref": "#/$defs/autonomyAndApprovals"
+        },
+        "expectedOutcome": {
+          "$ref": "#/$defs/expectedOutcome"
+        },
+        "accessNeeded": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/accessItem"
+          }
+        },
+        "fitCheck": {
+          "$ref": "#/$defs/fitCheck"
+        },
+        "risks": {
+          "$ref": "#/$defs/stringList"
+        },
+        "dataRetention": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["default", "decidedByOwner"],
+          "properties": {
+            "default": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "decidedByOwner": {
+              "type": "boolean"
+            }
+          }
+        },
+        "pauseSwitch": {
+          "description": "One step that stops all routines, such as disabling the timers.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["how", "who"],
+          "properties": {
+            "how": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "who": {
+              "$ref": "#/$defs/nonEmptyString"
+            }
+          }
+        },
+        "approvalChannel": {
+          "description": "How an approval reaches a person, and what happens if nobody answers.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["how", "who", "fallback"],
+          "properties": {
+            "how": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "who": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/nonEmptyString"
+              }
+            },
+            "fallback": {
+              "$ref": "#/$defs/nonEmptyString"
+            }
+          }
+        },
+        "costEstimate": {
+          "description": "Monthly model and hosting cost. Measured on a trial week, never guessed: a number is only allowed once status is measured.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["monthly", "basis", "status"],
+          "properties": {
+            "monthly": {
+              "type": ["number", "null"],
+              "minimum": 0
+            },
+            "basis": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "status": {
+              "enum": ["to measure", "measured"]
+            }
+          },
+          "if": {
+            "properties": {
+              "monthly": {
+                "type": "number"
+              }
+            },
+            "required": ["monthly"],
+            "type": "object"
+          },
+          "then": {
+            "properties": {
+              "status": {
+                "const": "measured"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "acceptanceChecks": {
+          "description": "Test scenarios that double as the build test plan. The ticket asks for three to five; at least three is enforced and no maximum, because the worked example's third design lists seven.",
+          "type": "array",
+          "minItems": 3,
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
+          }
+        }
+      }
+    },
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "model", "fallback", "why", "evidence"],
+      "properties": {
+        "provider": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "model": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "fallback": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["provider", "model"],
+              "properties": {
+                "provider": {
+                  "$ref": "#/$defs/nonEmptyString"
+                },
+                "model": {
+                  "$ref": "#/$defs/nonEmptyString"
+                }
+              }
+            }
+          ]
+        },
+        "why": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "evidence": {
+          "$ref": "#/$defs/evidenceRefs"
+        }
+      }
+    },
+    "skill": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "kind", "why", "evidence"],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "kind": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "why": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "evidence": {
+          "$ref": "#/$defs/evidenceRefs"
+        }
+      }
+    },
+    "tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capability", "why"],
+      "properties": {
+        "capability": {
+          "$ref": "#/$defs/capabilityId"
+        },
+        "why": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "evidence": {
+          "$ref": "#/$defs/evidenceRefs"
+        }
+      }
+    },
+    "memory": {
+      "description": "Memory is split in three: instructions humans edit, state written only through a script, and per-customer notes humans edit.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["instructions", "state", "notes"],
+      "properties": {
+        "instructions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["files", "editedBy"],
+          "properties": {
+            "files": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/nonEmptyString"
+              }
+            },
+            "editedBy": {
+              "$ref": "#/$defs/nonEmptyString"
+            }
+          }
+        },
+        "state": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["store", "records", "writtenBy"],
+          "properties": {
+            "store": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "records": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "writtenBy": {
+              "$ref": "#/$defs/nonEmptyString"
+            }
+          }
+        },
+        "notes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["what", "editedBy"],
+          "properties": {
+            "what": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "editedBy": {
+              "$ref": "#/$defs/nonEmptyString"
+            }
+          }
+        }
+      }
+    },
+    "routine": {
+      "description": "A scheduled job: a systemd timer plus a service that runs pi headlessly. Declarative; rendering it to unit files is not part of event one.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "schedule",
+        "prompt",
+        "toolsAllowed",
+        "session",
+        "approvals",
+        "onFailure"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "schedule": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["calendar", "timeZone"],
+          "properties": {
+            "calendar": {
+              "description": "A systemd OnCalendar expression, copied as is. Checking it with systemd-analyze is ticket S6 and is not done here.",
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "timeZone": {
+              "description": "An IANA time zone such as America/Toronto.",
+              "$ref": "#/$defs/nonEmptyString"
+            }
+          }
+        },
+        "prompt": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "toolsAllowed": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/capabilityId"
+          }
+        },
+        "session": {
+          "description": "none (stateless), continue-latest, or named:<session name>. PROPOSAL: the worked example only uses none; the other two follow pi's -c and --session options and should be checked against pi's docs.",
+          "type": "string",
+          "pattern": "^(none|continue-latest|named:.+)$"
+        },
+        "approvals": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "onFailure": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      }
+    },
+    "autonomyAndApprovals": {
+      "description": "What it does alone, what needs a human, what it must never do, and which limits are enforced in code rather than only in the prompt.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["alone", "needsApproval", "never", "enforcedInCode"],
+      "properties": {
+        "alone": {
+          "$ref": "#/$defs/stringList"
+        },
+        "needsApproval": {
+          "$ref": "#/$defs/stringList"
+        },
+        "never": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
+          }
+        },
+        "enforcedInCode": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
+          }
+        }
+      }
+    },
+    "expectedOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "metric",
+        "baselineHours",
+        "estimate",
+        "assumptions",
+        "notAGuarantee"
+      ],
+      "properties": {
+        "metric": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "baselineHours": {
+          "type": ["number", "null"],
+          "minimum": 0
+        },
+        "estimate": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "assumptions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
+          }
+        },
+        "notAGuarantee": {
+          "description": "Numbers shown to guests are estimates with stated assumptions, never guarantees.",
+          "const": true
+        }
+      }
+    },
+    "accessItem": {
+      "description": "What the employee needs access to. Credentials are never embedded.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["system", "permission", "note"],
+      "properties": {
+        "system": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "permission": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "note": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "fitCheck": {
+      "description": "Whether every capability the design needs is on the vetted list. A design that needs an unvetted capability is blocked and must say what is missing.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "gaps"],
+      "properties": {
+        "status": {
+          "enum": ["feasible", "blocked"]
+        },
+        "gaps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["capability", "need", "vetted"],
+            "properties": {
+              "capability": {
+                "$ref": "#/$defs/capabilityId"
+              },
+              "need": {
+                "$ref": "#/$defs/nonEmptyString"
+              },
+              "vetted": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "fallback": {
+          "type": "string"
+        },
+        "gapsLoggedForB1": {
+          "type": "boolean"
+        }
+      },
+      "if": {
+        "properties": {
+          "status": {
+            "const": "blocked"
+          }
+        },
+        "required": ["status"],
+        "type": "object"
+      },
+      "then": {
+        "properties": {
+          "gaps": {
+            "type": "array",
+            "minItems": 1
+          },
+          "fallback": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": ["fallback"],
+        "type": "object"
+      },
+      "else": {
+        "properties": {
+          "gaps": {
+            "type": "array",
+            "maxItems": 0
+          }
+        },
+        "type": "object"
+      }
+    },
+    "recommendation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["designId", "madeBy", "reasons", "caveats"],
+      "properties": {
+        "designId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "madeBy": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "reasons": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
+          }
+        },
+        "caveats": {
+          "$ref": "#/$defs/stringList"
+        }
+      }
+    },
+    "capability": {
+      "description": "One entry in a capability catalog, as used inside a blueprint. B1's real entries use vettedCapability.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "vendor",
+        "kind",
+        "access",
+        "vetted",
+        "pinnedVersion",
+        "reviewedBy",
+        "reviewedOn"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/capabilityId"
+        },
+        "vendor": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "kind": {
+          "enum": [
+            "model",
+            "skill",
+            "mcp",
+            "cli",
+            "script",
+            "memory",
+            "scheduler"
+          ]
+        },
+        "access": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "connectsTo": {
+          "type": "string"
+        },
+        "permissions": {
+          "$ref": "#/$defs/stringList"
+        },
+        "risk": {
+          "enum": ["low", "medium", "high"]
+        },
+        "riskNote": {
+          "type": "string"
+        },
+        "license": {
+          "type": "string"
+        },
+        "vetted": {
+          "type": "boolean"
+        },
+        "pinnedVersion": {
+          "type": ["string", "null"]
+        },
+        "reviewedBy": {
+          "type": ["string", "null"]
+        },
+        "reviewedOn": {
+          "description": "Review date, YYYY-MM-DD.",
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          ]
+        },
+        "status": {
+          "description": "illustrative (example only), draft (written, not yet reviewed by a human) or vetted (a human reviewed it).",
+          "enum": ["illustrative", "draft", "vetted"]
+        }
+      },
+      "if": {
+        "properties": {
+          "status": {
+            "const": "vetted"
+          }
+        },
+        "required": ["status"],
+        "type": "object"
+      },
+      "then": {
+        "properties": {
+          "vetted": {
+            "const": true
+          },
+          "pinnedVersion": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reviewedBy": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reviewedOn": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "vettedCapability": {
+      "description": "A B1 entry: a capability that also records what it connects to, its permissions, its risk and its license. An agent writes these as draft with reviewedBy and reviewedOn null; a human sets status to vetted.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/capability"
+        }
+      ],
+      "required": ["connectsTo", "permissions", "risk", "license", "status"],
+      "unevaluatedProperties": false,
+      "type": "object",
+      "properties": {
+        "connectsTo": {
+          "type": "string",
+          "minLength": 1
+        },
+        "permissions": {
+          "type": "array",
+          "minItems": 1
+        },
+        "risk": {
+          "enum": ["low", "medium", "high"]
+        },
+        "license": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": ["illustrative", "draft", "vetted"]
+        }
+      }
+    }
+  }
+}
