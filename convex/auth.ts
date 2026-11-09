@@ -7,6 +7,7 @@ import { components } from "./_generated/api";
 import type { DataModel } from "./_generated/dataModel";
 import { query } from "./_generated/server";
 import authConfig from "./auth.config";
+import { findStaff, parseAllowlist } from "../src/lib/access/staff";
 
 export const authComponent = createClient<DataModel>(components.betterAuth);
 
@@ -16,6 +17,9 @@ export const authComponent = createClient<DataModel>(components.betterAuth);
 // being emailed. Once a key is set but no sender is wired, sending fails
 // loudly rather than silently logging a code in production.
 async function sendSignInCode(email: string, otp: string) {
+  // Codes go only to allowlisted staff. Anyone else gets the same quiet
+  // response, so the form does not reveal who is on the list.
+  if (!findStaff(parseAllowlist(process.env.STAFF_ALLOWLIST), email)) return;
   if (process.env.EMAIL_API_KEY) {
     throw new Error("Email sender is not implemented yet (ticket E3).");
   }

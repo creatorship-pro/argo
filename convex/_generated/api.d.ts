@@ -9,7 +9,21 @@
  */
 
 import type * as auth from "../auth.js";
+import type * as capture from "../capture.js";
+import type * as consent from "../consent.js";
+import type * as designs from "../designs.js";
+import type * as designsNode from "../designsNode.js";
+import type * as events from "../events.js";
+import type * as groups from "../groups.js";
+import type * as guests from "../guests.js";
 import type * as http from "../http.js";
+import type * as lib_staff from "../lib/staff.js";
+import type * as lib_validators from "../lib/validators.js";
+import type * as listener from "../listener.js";
+import type * as profile from "../profile.js";
+import type * as proposals from "../proposals.js";
+import type * as seed from "../seed.js";
+import type * as staff from "../staff.js";
 
 import type {
   ApiFromModules,
@@ -18,8 +32,22 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  auth: typeof auth;
-  http: typeof http;
+  "auth": typeof auth;
+  "capture": typeof capture;
+  "consent": typeof consent;
+  "designs": typeof designs;
+  "designsNode": typeof designsNode;
+  "events": typeof events;
+  "groups": typeof groups;
+  "guests": typeof guests;
+  "http": typeof http;
+  "lib/staff": typeof lib_staff;
+  "lib/validators": typeof lib_validators;
+  "listener": typeof listener;
+  "profile": typeof profile;
+  "proposals": typeof proposals;
+  "seed": typeof seed;
+  "staff": typeof staff;
 }>;
 
 /**
