@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
-import QRCode from "qrcode";
 import { api, type Id } from "@/lib/convex";
+import { QrCode } from "@/components/qr/QrCode";
 import { ProposalPage } from "@/components/proposal/ProposalPage";
 import { talkingPoints } from "@/lib/proposal/view";
 import { evidenceFor } from "@/lib/blueprint/review";
@@ -20,7 +20,7 @@ export function PresentScreen({ guestId }: { guestId: Id<"guests"> }) {
   const links = useQuery(api.proposals.linksForGuest, { guestId });
   const create = useMutation(api.proposals.createLink);
   const revoke = useMutation(api.proposals.revoke);
-  const [qr, setQr] = useState<{ svg: string; url: string } | null>(null);
+  const [qr, setQr] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showQr, setShowQr] = useState(false);
 
@@ -28,13 +28,7 @@ export function PresentScreen({ guestId }: { guestId: Id<"guests"> }) {
     setError(null);
     try {
       const { token } = await create({ guestId });
-      const url = `${window.location.origin}/p/${token}`;
-      const svg = await QRCode.toString(url, {
-        type: "svg",
-        margin: 1,
-        width: 480,
-      });
-      setQr({ svg, url });
+      setQr(`${window.location.origin}/p/${token}`);
       setShowQr(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not make the link.");
@@ -91,10 +85,9 @@ export function PresentScreen({ guestId }: { guestId: Id<"guests"> }) {
           className="fixed inset-0 z-20 flex flex-col items-center justify-center gap-6 bg-black/80 p-8"
           onClick={() => setShowQr(false)}
         >
-          <div
-            className="rounded-3xl bg-white p-6"
-            dangerouslySetInnerHTML={{ __html: qr.svg }}
-          />
+          <div className="rounded-3xl bg-white p-6">
+            <QrCode url={qr} />
+          </div>
           <p className="text-2xl text-white">
             Ask the owner to scan this with their phone camera.
           </p>

@@ -7,31 +7,37 @@ import { components } from "./_generated/api";
 import type { DataModel } from "./_generated/dataModel";
 import { query } from "./_generated/server";
 import authConfig from "./auth.config";
-import { findStaff, parseAllowlist } from "../src/lib/access/staff";
+import {
+  deliverSignInCode,
+  resendSender,
+} from "../src/lib/access/sign-in-code";
 
 export const authComponent = createClient<DataModel>(components.betterAuth);
 
-// Staff sign in with a one-time code sent to their email (ticket E3 builds the
-// real flow). The real email sender comes later from Mezie. Until
-// EMAIL_API_KEY is set, the code is logged to the Convex dev log instead of
-// being emailed. Once a key is set but no sender is wired, sending fails
-// loudly rather than silently logging a code in production.
+// Staff sign in with a one-time code sent to their email, only if they are on
+// the STAFF_ALLOWLIST (ticket E3). See src/lib/access/sign-in-code.ts.
 async function sendSignInCode(email: string, otp: string) {
-  // Codes go only to allowlisted staff. Anyone else gets the same quiet
-  // response, so the form does not reveal who is on the list.
-  if (!findStaff(parseAllowlist(process.env.STAFF_ALLOWLIST), email)) return;
-  if (process.env.EMAIL_API_KEY) {
-    throw new Error("Email sender is not implemented yet (ticket E3).");
-  }
-  console.log(`[dev only] sign-in code for ${email}: ${otp}`);
+  await deliverSignInCode(email, otp, {
+    env: process.env,
+    send: resendSender(process.env.EMAIL_API_KEY ?? ""),
+    log: console.log,
+  });
 }
 
 export const createAuth = (ctx: GenericCtx<DataModel>) =>
   betterAuth({
     baseURL: process.env.SITE_URL,
     database: authComponent.adapter(ctx),
+    // Long sessions, so an FDE stays signed in on the iPad all evening.
+    session: { expiresIn: 60 * 60 * 24 * 14, updateAge: 60 * 60 * 24 },
     plugins: [
       emailOTP({
+        // Better Auth's own defaults, stated so they are not a surprise:
+        // six digits, five minutes, three tries. Codes, not links, because
+        // email security scanners can use up a one-time link.
+        otpLength: 6,
+        expiresIn: 300,
+        allowedAttempts: 3,
         async sendVerificationOTP({ email, otp, type }) {
           if (type === "sign-in") await sendSignInCode(email, otp);
         },
