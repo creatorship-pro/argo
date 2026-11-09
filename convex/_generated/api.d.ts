@@ -22,6 +22,7 @@ import type * as lib_validators from "../lib/validators.js";
 import type * as listener from "../listener.js";
 import type * as profile from "../profile.js";
 import type * as proposals from "../proposals.js";
+import type * as purchases from "../purchases.js";
 import type * as seed from "../seed.js";
 import type * as staff from "../staff.js";
 
@@ -46,6 +47,7 @@ declare const fullApi: ApiFromModules<{
   "listener": typeof listener;
   "profile": typeof profile;
   "proposals": typeof proposals;
+  "purchases": typeof purchases;
   "seed": typeof seed;
   "staff": typeof staff;
 }>;

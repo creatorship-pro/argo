@@ -417,3 +417,145 @@ describe("guest links (the QR code)", () => {
     expect(JSON.parse(tk!.json).status).toBe("designed-not-deployed");
   });
 });
+
+import { signStripePayload } from "../../src/lib/stripe/webhook";
+
+describe("payments", () => {
+  const secret = "whsec_test_secret";
+  async function withLink() {
+    const s = await setup();
+    const setId = await s.t.run((ctx) =>
+      ctx.db.insert("designSets", {
+        guestId: s.mine,
+        createdAt: 1,
+        blueprint: JSON.parse(JSON.stringify(example)),
+        generatedBy: "stub",
+      }),
+    );
+    as("ana@x.com");
+    await s.t.mutation(api.designs.choose, {
+      designSetId: setId,
+      designId: "d2-coordinator",
+    });
+    const { token } = await s.t.mutation(api.proposals.createLink, {
+      guestId: s.mine,
+    });
+    as(undefined);
+    return { ...s, token };
+  }
+  const event = (
+    id: string,
+    over: Record<string, unknown> = {},
+    type = "checkout.session.completed",
+  ) =>
+    JSON.stringify({
+      id: "evt_1",
+      type,
+      data: {
+        object: {
+          id,
+          payment_status: "paid",
+          amount_total: 170000,
+          currency: "cad",
+          ...over,
+        },
+      },
+    });
+  async function post(
+    t: Awaited<ReturnType<typeof setup>>["t"],
+    body: string,
+    sign = true,
+  ) {
+    const header = sign
+      ? await signStripePayload(body, secret, Math.floor(Date.now() / 1000))
+      : "t=1,v1=nope";
+    return t.fetch("/stripe/webhook", {
+      method: "POST",
+      body,
+      headers: { "stripe-signature": header },
+    });
+  }
+  beforeEach(() => {
+    process.env.STRIPE_WEBHOOK_SECRET = secret;
+  });
+
+  it("gives the checkout route the design and the server's own offer, only for a live link", async () => {
+    const { t, token } = await withLink();
+    const ctx = await t.query(api.purchases.checkoutContext, { token });
+    expect(ctx).toMatchObject({
+      designId: "d2-coordinator",
+      purchasable: false,
+      alreadyPaid: false,
+    });
+    expect(ctx?.offer.placeholder).toBe(true);
+    expect(
+      await t.query(api.purchases.checkoutContext, { token: "z".repeat(43) }),
+    ).toBeNull();
+  });
+  it("will not record a purchase for a bad token", async () => {
+    const { t } = await withLink();
+    await expect(
+      t.mutation(api.purchases.recordPending, {
+        token: "z".repeat(43),
+        sessionId: "cs_1",
+      }),
+    ).rejects.toThrow(/not valid/);
+  });
+  it("marks the purchase paid when a correctly signed event arrives, and only once", async () => {
+    const { t, token, mine } = await withLink();
+    await t.mutation(api.purchases.recordPending, { token, sessionId: "cs_1" });
+    expect((await post(t, event("cs_1"))).status).toBe(200);
+    expect((await post(t, event("cs_1"))).status).toBe(200); // Stripe may send it twice
+    const rows = await t.run((ctx) => ctx.db.query("purchases").collect());
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      guestId: mine,
+      status: "paid",
+      amountTotal: 170000,
+      currency: "cad",
+      designId: "d2-coordinator",
+    });
+    expect((await t.query(api.proposals.byToken, { token })).status).toBe("ok");
+    expect(
+      (await t.query(api.purchases.checkoutContext, { token }))?.alreadyPaid,
+    ).toBe(true);
+  });
+  it("refuses an event with a bad signature and changes nothing", async () => {
+    const { t, token } = await withLink();
+    await t.mutation(api.purchases.recordPending, { token, sessionId: "cs_1" });
+    expect((await post(t, event("cs_1"), false)).status).toBe(400);
+    expect(
+      (await t.run((ctx) => ctx.db.query("purchases").collect()))[0].status,
+    ).toBe("pending");
+  });
+  it("does not mark an unpaid session paid", async () => {
+    const { t, token } = await withLink();
+    await t.mutation(api.purchases.recordPending, { token, sessionId: "cs_1" });
+    await post(t, event("cs_1", { payment_status: "unpaid" }));
+    expect(
+      (await t.run((ctx) => ctx.db.query("purchases").collect()))[0].status,
+    ).toBe("pending");
+  });
+  it("marks an expired session expired", async () => {
+    const { t, token } = await withLink();
+    await t.mutation(api.purchases.recordPending, { token, sessionId: "cs_1" });
+    await post(t, event("cs_1", {}, "checkout.session.expired"));
+    expect(
+      (await t.run((ctx) => ctx.db.query("purchases").collect()))[0].status,
+    ).toBe("expired");
+  });
+  it("ignores a paid event for a session it never saw", async () => {
+    const { t } = await withLink();
+    expect((await post(t, event("cs_unknown"))).status).toBe(200);
+    expect(
+      await t.run((ctx) => ctx.db.query("purchases").collect()),
+    ).toHaveLength(0);
+  });
+  it("shows the page as paid after payment", async () => {
+    const { t, token } = await withLink();
+    await t.mutation(api.purchases.recordPending, { token, sessionId: "cs_1" });
+    await post(t, event("cs_1"));
+    const page = await t.query(api.proposals.byToken, { token });
+    expect(page.status === "ok" && page.paid).toBe(true);
+  });
+});

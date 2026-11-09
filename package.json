@@ -14,6 +14,8 @@
   },
   "dependencies": {
     "@convex-dev/better-auth": "^0.13.0",
+    "@stripe/react-stripe-js": "^7.0.1",
+    "@stripe/stripe-js": "^10.2.1",
     "ajv": "^8.20.0",
     "better-auth": "~1.7.16",
     "convex": "^1.49.0",

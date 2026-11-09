@@ -5,6 +5,7 @@ import { fetchQuery } from "convex/nextjs";
 import { api } from "@/lib/convex";
 import { ProposalPage } from "@/components/proposal/ProposalPage";
 import { BuyButton } from "@/components/proposal/BuyButton";
+import { PaymentStatus } from "@/components/proposal/PaymentStatus";
 
 // The token is in the URL, so keep this page out of search and out of Referer headers.
 export const metadata: Metadata = {
@@ -13,21 +14,27 @@ export const metadata: Metadata = {
   referrer: "no-referrer",
 };
 
-export default function GuestProposal({ params }: PageProps<"/p/[token]">) {
+export default function GuestProposal({
+  params,
+  searchParams,
+}: PageProps<"/p/[token]">) {
   return (
     <Suspense fallback={<p className="p-8 text-xl">Loading your proposal…</p>}>
-      <Content params={params} />
+      <Content params={params} searchParams={searchParams} />
     </Suspense>
   );
 }
 
 async function Content({
   params,
+  searchParams,
 }: {
   params: PageProps<"/p/[token]">["params"];
+  searchParams: PageProps<"/p/[token]">["searchParams"];
 }) {
   await connection();
   const { token } = await params;
+  const returning = (await searchParams).checkout === "return";
   const data = await fetchQuery(api.proposals.byToken, { token }).catch(
     () => null,
   );
@@ -45,26 +52,29 @@ async function Content({
   }
 
   return (
-    <ProposalPage
-      guestName={data.guestName}
-      business={data.business}
-      view={data.view}
-      offer={data.offer}
-      readyBy={data.readyBy}
-      standIn={data.stub}
-      downloads={{
-        json: `/p/${token}/takeaway/ai-employee.json`,
-        readme: `/p/${token}/takeaway/README.md`,
-      }}
-      action={
-        data.paid ? (
-          <span className="rounded-xl bg-emerald-100 px-5 py-4 text-lg font-semibold text-emerald-900">
-            Paid. Thank you.
-          </span>
-        ) : (
-          <BuyButton purchasable={data.offer.purchasable} />
-        )
-      }
-    />
+    <>
+      <PaymentStatus returning={returning} paid={data.paid} />
+      <ProposalPage
+        guestName={data.guestName}
+        business={data.business}
+        view={data.view}
+        offer={data.offer}
+        readyBy={data.readyBy}
+        standIn={data.stub}
+        downloads={{
+          json: `/p/${token}/takeaway/ai-employee.json`,
+          readme: `/p/${token}/takeaway/README.md`,
+        }}
+        action={
+          data.paid ? (
+            <span className="rounded-xl bg-emerald-100 px-5 py-4 text-lg font-semibold text-emerald-900">
+              Paid. Thank you.
+            </span>
+          ) : (
+            <BuyButton token={token} purchasable={data.offer.purchasable} />
+          )
+        }
+      />
+    </>
   );
 }
