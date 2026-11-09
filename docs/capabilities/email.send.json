@@ -1,0 +1,18 @@
+{
+  "id": "email.send",
+  "vendor": "Gmail, through shinzo-labs/gmail-mcp (npm @shinzolabs/gmail-mcp)",
+  "kind": "mcp",
+  "access": "read threads, create drafts, send",
+  "connectsTo": "The owner's Gmail account (OAuth), sending from the owner's address or a dedicated assistant address the owner chooses.",
+  "permissions": [
+    "Gmail OAuth scopes: gmail.readonly, gmail.compose (includes sending); gmail.send alone is sending-only but cannot read replies"
+  ],
+  "risk": "high",
+  "riskNote": "Messages go out in the owner's name. The limits that matter (two touches at most, business hours, never a do-not-contact customer, an invoice over the limit becomes a draft) must be enforced by ledger.touch refusing the send, not by the model. Same server, version, telemetry setting and restricted-scope questions as email.drafts. Credentials are held on the host and never in a blueprint.",
+  "license": "MIT",
+  "vetted": false,
+  "pinnedVersion": "1.7.4",
+  "reviewedBy": null,
+  "reviewedOn": null,
+  "status": "draft"
+}

@@ -1,0 +1,18 @@
+{
+  "id": "ledger.touch",
+  "vendor": "Argo (own script, not yet written)",
+  "kind": "script",
+  "access": "read and write the touch ledger; refuses sends that break the rules",
+  "connectsTo": "A local SQLite file on the employee's machine. No network access.",
+  "permissions": [
+    "Read and write one local SQLite file owned by the employee's unix user; no other file or network access"
+  ],
+  "risk": "low",
+  "riskNote": "Low in what it can touch, but it is the safety net: it is where the limits are enforced in code, so a bug here removes the protection the other entries rely on. It must refuse a send when there are already two touches for that quote or invoice, outside Monday to Friday 08:00 to 18:00 in the owner's time zone, to a customer marked do-not-contact-automatically, or for an invoice over the owner's limit (that becomes a draft). The employee may write to the ledger only through this script. The script does not exist yet, so there is no version to pin; writing it is part of building an employee after purchase, not this ticket. Needs tests for each refusal rule when it is written.",
+  "license": "Proprietary (Argo-owned, no license file yet)",
+  "vetted": false,
+  "pinnedVersion": null,
+  "reviewedBy": null,
+  "reviewedOn": null,
+  "status": "draft"
+}

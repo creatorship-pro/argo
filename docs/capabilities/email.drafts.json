@@ -1,0 +1,18 @@
+{
+  "id": "email.drafts",
+  "vendor": "Gmail, through shinzo-labs/gmail-mcp (npm @shinzolabs/gmail-mcp)",
+  "kind": "mcp",
+  "access": "create drafts only",
+  "connectsTo": "The owner's Gmail account (OAuth, with a Google Cloud OAuth client the owner or Argo creates).",
+  "permissions": [
+    "Gmail OAuth scopes: gmail.readonly (to see whether a customer replied) and gmail.compose (to create drafts)"
+  ],
+  "risk": "high",
+  "riskNote": "Google has no draft-only Gmail scope: gmail.compose also allows sending (checked against Google's scope list), and this server has no read-only or tool-filter option and exposes send_message and send_draft. So 'drafts only' is NOT enforced by the permission or by this server. It must be enforced outside it: either pi's per-run tool allowlist hides the send tools (TO VERIFY that pi's allowlist can filter individual MCP tools), or a draft-only server is used instead (PaulFidika/gmail-mcp-server is built that way, MIT, but has no releases and was last updated June 2025, commit 539a6fa). The server's README does not list the scopes it requests and its telemetry is on by default: set TELEMETRY_ENABLED=false. The server was last released August 2025. TO VERIFY: Google treats gmail.readonly and gmail.compose as restricted scopes, which may mean app verification or a 7-day refresh-token limit while the OAuth app is in testing.",
+  "license": "MIT",
+  "vetted": false,
+  "pinnedVersion": "1.7.4",
+  "reviewedBy": null,
+  "reviewedOn": null,
+  "status": "draft"
+}

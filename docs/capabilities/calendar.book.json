@@ -1,0 +1,18 @@
+{
+  "id": "calendar.book",
+  "vendor": "Google Calendar, through nspady/google-calendar-mcp (npm @cocal/google-calendar-mcp)",
+  "kind": "mcp",
+  "access": "read and create events",
+  "connectsTo": "The owner's Google Calendar (OAuth).",
+  "permissions": [
+    "Google Calendar OAuth scope: calendar.events (the server's README lists calendar.events and calendar as options; TO VERIFY which one it requests at runtime)"
+  ],
+  "risk": "medium",
+  "riskNote": "Creating an event with attendees can send a calendar invite to a customer, so booking is customer-facing. The server supports limiting tools with --enable-tools or ENABLED_TOOLS: expose only list-events, get-event, search-events, get-freebusy, get-current-time and create-event, so update-event and delete-event are not available. manage-accounts is always available regardless of the filter. The README says credentials stay on the local machine and mentions no telemetry. Maintained: latest release v2.8.1 (October 2026, 1,200+ stars).",
+  "license": "MIT",
+  "vetted": false,
+  "pinnedVersion": "2.8.1",
+  "reviewedBy": null,
+  "reviewedOn": null,
+  "status": "draft"
+}
