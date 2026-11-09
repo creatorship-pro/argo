@@ -37,7 +37,12 @@ jobs:
         if: ${{ hashFiles('package.json') != '' }}
         run: npm test --if-present
 
-      # S0 should add any placeholder environment variables the build needs.
+      # Placeholder values only: the build needs these variables to exist, but
+      # never connects to Convex. Real values live in .env.local and on the
+      # server, never in the repo.
       - name: Build
         if: ${{ hashFiles('package.json') != '' }}
         run: npm run build --if-present
+        env:
+          NEXT_PUBLIC_CONVEX_URL: https://placeholder.convex.cloud
+          NEXT_PUBLIC_CONVEX_SITE_URL: https://placeholder.convex.site
