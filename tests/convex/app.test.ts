@@ -294,7 +294,8 @@ describe("designs and the FDE's choice", () => {
       }),
     );
     as("ana@x.com");
-    delete process.env.ANTHROPIC_API_KEY;
+    delete process.env.OPENCODE_GO_API_KEY;
+    delete process.env.ARGO_LLM_API_KEY;
     const r = await t.action(api.designsNode.generate, { guestId: mine });
     expect(r.ok).toBe(true);
     const row = await t.query(api.designs.forGuest, { guestId: mine });

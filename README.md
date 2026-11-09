@@ -82,7 +82,7 @@ npx convex env set STAFF_ALLOWLIST "you@example.com:admin,fde@example.com:fde,sa
 npx convex run seed:rehearsal '{"fdeEmails":["fde@example.com"]}'
 ```
 
-Until an email sender exists (`EMAIL_API_KEY`, `EMAIL_FROM`), sign-in codes are not emailed. In development the code is printed in the `npx convex dev` log. Without `ANTHROPIC_API_KEY` the suggestions are a plain checklist and the three designs are a labeled stand-in, so the whole flow can be tried before a key exists.
+Until an email sender exists (`EMAIL_API_KEY`, `EMAIL_FROM`), sign-in codes are not emailed. In development the code is printed in the `npx convex dev` log. Without `OPENCODE_GO_API_KEY` the suggestions are a plain checklist and the three designs are a labeled stand-in, so the whole flow can be tried before a key exists. Model calls go to the OpenCode Go gateway (OpenAI-compatible) at `https://opencode.ai/zen/go/v1`; `ARGO_MODEL` picks the model and defaults to `glm-5.3`.
 
 Then: sign in as the FDE at `/fde`, open a guest, tap "Guest agreed", record (the transcription stub returns fake text), lock a read-back, build the designs at the break review, choose one, and open the proposal and QR code. Open `/facilitator` as the facilitator to run the clock.
 

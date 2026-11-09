@@ -30,7 +30,8 @@ Convex has its own settings, set once on the deployment, not here:
 npx convex env set BETTER_AUTH_SECRET "$(openssl rand -base64 32)"
 npx convex env set SITE_URL https://argo.example.com
 npx convex env set STAFF_ALLOWLIST "ana@example.com:fde,sam@example.com:facilitator,you@example.com:admin"
-npx convex env set ANTHROPIC_API_KEY sk-ant-...        # without it, designs are a labeled stand-in
+npx convex env set OPENCODE_GO_API_KEY oc_sk_...       # OpenCode Go gateway; without it, designs are a labeled stand-in
+# npx convex env set ARGO_MODEL glm-5.3               # optional, this is the default
 npx convex env set STRIPE_WEBHOOK_SECRET whsec_...
 npx convex env set EMAIL_API_KEY ... && npx convex env set EMAIL_FROM argo@example.com
 npx convex deploy                                      # pushes the functions
