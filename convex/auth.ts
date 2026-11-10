@@ -7,6 +7,7 @@ import { components } from "./_generated/api";
 import type { DataModel } from "./_generated/dataModel";
 import { query } from "./_generated/server";
 import authConfig from "./auth.config";
+import { devFixedOtp } from "../src/lib/access/dev-otp";
 import {
   deliverSignInCode,
   resendSender,
@@ -44,6 +45,8 @@ export const createAuth = (ctx: GenericCtx<DataModel>) =>
         // six digits, five minutes, three tries. Codes, not links, because
         // email security scanners can use up a one-time link.
         otpLength: 6,
+        // Rehearsal only, and only when DEV_FIXED_OTP is set. See dev-otp.ts.
+        generateOTP: (data) => devFixedOtp(data, process.env),
         // Five minutes by default. In rehearsal the code is read out of the
         // Convex log by hand, which can take longer, so it can be raised with
         // OTP_EXPIRES_SECONDS (capped at an hour). Leave it unset for the event.
