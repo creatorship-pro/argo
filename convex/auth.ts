@@ -44,7 +44,13 @@ export const createAuth = (ctx: GenericCtx<DataModel>) =>
         // six digits, five minutes, three tries. Codes, not links, because
         // email security scanners can use up a one-time link.
         otpLength: 6,
-        expiresIn: 300,
+        // Five minutes by default. In rehearsal the code is read out of the
+        // Convex log by hand, which can take longer, so it can be raised with
+        // OTP_EXPIRES_SECONDS (capped at an hour). Leave it unset for the event.
+        expiresIn: Math.min(
+          Math.max(Number(process.env.OTP_EXPIRES_SECONDS) || 300, 60),
+          3600,
+        ),
         allowedAttempts: 3,
         async sendVerificationOTP({ email, otp, type }) {
           if (type === "sign-in") await sendSignInCode(email, otp);
